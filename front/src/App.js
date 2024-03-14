@@ -114,7 +114,7 @@ function App() {
   }, [])
 
   return (
-    <div style={{width: '300px', display: 'flex', alignContent: 'center', flexDirection: 'column', justifyContent: 'center', height: '450px'}}>
+    <div style={{width: '300px', height: '270px', alignSelf: 'center',}}>
     <>
       
       <div>
