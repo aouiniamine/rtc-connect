@@ -3,7 +3,7 @@ import './App.css'
 import Peer from 'simple-peer'
 import { io } from 'socket.io-client'
 
-const socket = io('https://192.168.56.1:5001', {
+const socket = io('https://192.168.0.3:5001', {
 
 })
 
@@ -14,6 +14,7 @@ function App() {
   const onChange = (e)=> setEndPeer(e.target.value)
   const [stream, setStream] = useState(null)
   const [isCalling, setIsCalling] = useState(false)
+  const [offerStatus, setOfferStatus] = useState(false)
   const peerAudio = useRef()
   const peer = useRef()
   const [callStatus, setCallStatus] = useState(false)
@@ -35,6 +36,7 @@ function App() {
             name
           }
         }
+        setOfferStatus(true)
         socket.emit('callPeer', handshake)
       })
       socket.on('callAnswered', ({id, name, signal}) =>{
@@ -76,10 +78,10 @@ function App() {
         peerAudio.current.srcObject = stream
       })
       
-      
   }
 
   const decline = ()=>{
+    socket.emit('decline', isCalling)
     setIsCalling(null)
   }
   const leave =() =>{
@@ -121,6 +123,9 @@ function App() {
       peer.current.destroy()
 
     })
+    socket.on('decline', ()=>{
+      setOfferStatus(false)
+    })
     socket.on('endCall', ()=>{
       setIsCalling(null)
     })
@@ -151,9 +156,14 @@ function App() {
             
           <audio ref={peerAudio} autoPlay playsInline></audio>
         </div>
+      ): offerStatus ?(
+        <div>
+          <h3>to: {endPeer}</h3>
+          <h3>calling ...</h3>
+        </div>
       ):(
         <div style={{display: 'flex', flexDirection: 'column', marginTop: '25px'}}>
-        <input style={{padding: 10, borderRadius: '5px'}} onChange={onChange} type='text' placeholder='calling to'></input>
+        <input style={{padding: 10, borderRadius: '5px'}} onChange={onChange} type='text' placeholder='calling to' value={endPeer}></input>
         <button onClick={call} style={{backgroundColor: 'lightgreen', marginTop: '10px', width: '100px', alignSelf: 'center', }}>call</button>
         
       </div>)}

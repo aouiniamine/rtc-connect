@@ -18,8 +18,6 @@ const server = https.createServer(options, app)
 const io = socketIo(server, {
     cors: {
         origin: [process.env.HOST, process.env.HOST_1, 'https://localhost:3000'],
-        methods: ['GET', 'POST'],
-        
     },
 })
 
@@ -34,6 +32,9 @@ io.on('connection', socket =>{
 
     socket.on('answerCall', handshake => {
         io.to(handshake.caller.id).emit('callAnswered', handshake.endReciever)
+    })
+    socket.on('decline', caller => {
+        io.to(caller.id).emit('decline')
     })
 
     socket.on('leaveCall', handshake => {
