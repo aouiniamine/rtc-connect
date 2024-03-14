@@ -36,6 +36,10 @@ io.on('connection', socket =>{
         io.to(handshake.caller.id).emit('callAnswered', handshake.endReciever)
     })
 
+    socket.on('leaveCall', handshake => {
+        io.to(handshake.endPeer.id).emit('userLeft', handshake.peer)
+    })
+
     socket.on('disconnect', ()=>{
         console.log('user:', socket.id,'is disconnected')
         socket.broadcast.emit('endCall')

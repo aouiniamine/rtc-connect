@@ -83,9 +83,16 @@ function App() {
     setIsCalling(null)
   }
   const leave =() =>{
+    let handshake = {
+      peer: {id, name},
+      endPeer: isCalling
+    }
+    socket.emit('leaveCall', handshake)
     setIsCalling(null)
+    setCallStatus(false)
     console.log(peer.current.destroy)
-    peer.current.destroy(err=> console.log(err))
+      
+    peer.current.destroy()
     // peer.audio = null
   }
   useEffect(()=>{
@@ -108,6 +115,12 @@ function App() {
       // console.log(`connect_error due to ${err.message}`);
       console.log(err)
     });
+    socket.on('userLeft', endPeer =>{
+      setIsCalling(null)
+      setCallStatus(false)
+      peer.current.destroy()
+
+    })
     socket.on('endCall', ()=>{
       setIsCalling(null)
     })
@@ -128,7 +141,7 @@ function App() {
           <h3>{isCalling.name}: {isCalling.id}</h3>
          
           {!callStatus ?
-          (<div style={{display: 'flex', flexDirection: 'row',}}>
+          (<div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center', gap: '5px'}}>
             <button onClick={answer} style={{backgroundColor: 'lightgreen', alignContent: 'center'}}>answer</button>
             <button onClick={decline} style={{backgroundColor: 'lightsalmon', alignContent: 'center'}}>decline</button>
           </div>
