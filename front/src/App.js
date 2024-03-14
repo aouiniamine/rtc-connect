@@ -143,10 +143,10 @@ function App() {
           {!callStatus ?
           (<div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center', gap: '5px'}}>
             <button onClick={answer} style={{backgroundColor: 'lightgreen', alignContent: 'center'}}>answer</button>
-            <button onClick={decline} style={{backgroundColor: 'lightsalmon', alignContent: 'center'}}>decline</button>
+            <button onClick={decline} style={{backgroundColor: '#ff6e6e', alignContent: 'center'}}>decline</button>
           </div>
           ): (
-            <button onClick={leave}>leave</button>
+            <button style={{backgroundColor: '#ff6e6e'}} onClick={leave}>leave</button>
             )}
             
           <audio ref={peerAudio} autoPlay playsInline></audio>
@@ -154,7 +154,7 @@ function App() {
       ):(
         <div style={{display: 'flex', flexDirection: 'column', marginTop: '25px'}}>
         <input style={{padding: 10, borderRadius: '5px'}} onChange={onChange} type='text' placeholder='calling to'></input>
-        <button onClick={call} style={{backgroundColor: 'lightgray', marginTop: '10px', width: '100px', alignSelf: 'center', height: '25px',}}>call</button>
+        <button onClick={call} style={{backgroundColor: 'lightgreen', marginTop: '10px', width: '100px', alignSelf: 'center', }}>call</button>
         
       </div>)}
       
