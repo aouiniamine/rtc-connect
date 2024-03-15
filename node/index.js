@@ -6,6 +6,8 @@ const fs = require('fs')
 const express = require('express')
 const app = express()
 
+const {createClient} = require('redis')
+
 app.get('/', (req, res)=> res.send('hello'))
 
 const key = fs.readFileSync('cert/cert.key');
@@ -21,29 +23,46 @@ const io = socketIo(server, {
     },
 })
 
-io.on('connection', socket =>{
-    console.log('socket:', socket.id, 'is connected.')
-    io.to(socket.id).emit('/', socket.id)
-    socket.on('callPeer', handshake =>{
+io.on('connection', async (socket) =>{
+    const client =
+    await createClient()
+    .on('error', err => console.log('Redis Client Error', err))
+    .connect();
+
+    socket.on('get:user', async(user) =>{
+        await client.set(user.number, socket.id)
+        .finally(() => console.log(socket.id,':', user.name, 'connected with', user.number))
+
+    })
+    socket.on('offer', async handshake =>{
         // reciever shoud contain socket id
+        const reciever = await client.get(handshake.reciever, 'reciver')
+
         // caller should contain caller socket id & signal
-        io.to(handshake.reciever).emit('recieveCall', handshake.caller)
+        io.to(reciever).emit('get:offer', handshake.caller)
     })
 
-    socket.on('answerCall', handshake => {
-        io.to(handshake.caller.id).emit('callAnswered', handshake.endReciever)
+    socket.on('accept', async handshake => {
+        const caller = await client.get(handshake.caller.number)
+        io.to(caller).emit('call:accepted', handshake.endReciever)
     })
-    socket.on('decline', caller => {
-        io.to(caller.id).emit('decline')
+    socket.on('decline', async caller => {
+        const callerId = await client.get(caller.number)
+        console.log(callerId, caller)
+        io.to(callerId).emit('decline')
     })
 
-    socket.on('leaveCall', handshake => {
-        io.to(handshake.endPeer.id).emit('userLeft', handshake.peer)
+    socket.on('leave', async handshake => {
+        // console.log(handshake.endPeer, "endPeer")
+        const endPeer = await client.get(handshake.endPeer.number)
+        console.log(endPeer, 'endPeer')
+        await io.to(endPeer).emit('user:left', handshake.peer)
     })
 
     socket.on('disconnect', ()=>{
+        
         console.log('user:', socket.id,'is disconnected')
-        socket.broadcast.emit('endCall')
+        socket.broadcast.emit('call:end')
     })
 })
 
