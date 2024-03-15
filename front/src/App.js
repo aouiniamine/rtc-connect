@@ -18,41 +18,36 @@ function App() {
   const peerAudio = useRef()
   const peer = useRef()
   const [callStatus, setCallStatus] = useState(false)
-
-  const call = () => {
-    
-      peer.current = new Peer({
-        initiator: true,
-        trickle: false,
-        stream
-      })
-      peer.current.on('signal', signal =>{
-        
-        const handshake = {
-          reciever: endPeer,
-          caller: {
-            number,
-            signal,
-            name
-          }
+  const callButtonRef = useRef()
+  // callButtonRef.current.onClick = call 
+  
+  const call = (e) => {
+    setOfferStatus(true)
+    peer.current = new Peer({
+      initiator: true,
+      trickle: false,
+      stream
+    })
+    peer.current.on('signal', signal =>{
+      
+      const handshake = {
+        reciever: endPeer,
+        caller: {
+          number,
+          signal,
+          name
         }
-        setOfferStatus(true)
-        socket.emit('offer', handshake)
-      })
-      socket.on('call:accepted', (caller) =>{
-        console.log(caller)
-        setCallStatus(true)
-        setIsCalling(caller)
-        peer.current.signal(caller.signal)
-      })
-      peer.current.on('stream', stream =>{
-        peerAudio.current.srcObject = stream
-      })
+      }
+      socket.emit('offer', handshake)
+    })
     
-  }
-
+    peer.current.on('stream', stream =>{
+      peerAudio.current.srcObject = stream
+    })
+    
+}
   const answer = () =>{
-    
+    setCallStatus(true)
     peer.current = new Peer({
         initiator: false,
         trickle: false,
@@ -63,11 +58,11 @@ function App() {
         const handshake = {
           caller: isCalling,
           endReciever: {
+            number,
             name,
             signal
           }
         }
-        setCallStatus(true)
         console.log(handshake, 'answer call')
         
         socket.emit('accept', handshake)
@@ -92,7 +87,7 @@ function App() {
     socket.emit('leave', handshake)
     setIsCalling(null)
     setCallStatus(false)
-    console.log(peer.current.destroy)
+    setOfferStatus(false)
       
     peer.current.destroy()
     // peer.audio = null
@@ -142,7 +137,28 @@ function App() {
     socket.on('call:end', ()=>{
       setOfferStatus(false)
       setIsCalling(null)
+      
     })
+    socket.on('call:accepted', (caller) =>{
+      console.log(caller, 'ss')
+      if(peer.current){
+
+        setCallStatus(true)
+        setIsCalling(caller)
+        peer.current.signal(caller.signal)
+      }
+    })
+    return ()=>{
+      socket.off('call:accepted')
+      socket.off('get:offer')
+      socket.off('connect')
+      socket.off('call:end')
+      socket.off('decline')
+      socket.off('user:left')
+      socket.off('connect_error')
+      socket.off('call:accepted')
+    }
+    
   }, [])
 
   return (
@@ -178,7 +194,7 @@ function App() {
       ):(
         <div style={{display: 'flex', flexDirection: 'column', marginTop: '25px'}}>
         <input style={{padding: 10, borderRadius: '5px'}} onChange={onChange} type='text' placeholder='calling to' value={endPeer}></input>
-        <button disabled={offerStatus} onClick={call} style={{backgroundColor: 'lightgreen', marginTop: '10px', width: '100px', alignSelf: 'center', }}>call</button>
+        <button disabled={offerStatus} id='call' onClick={call} ref={callButtonRef} style={{backgroundColor: 'lightgreen', marginTop: '10px', width: '100px', alignSelf: 'center', }}>call</button>
         
       </div>)}
       
