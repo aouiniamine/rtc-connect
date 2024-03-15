@@ -53,10 +53,8 @@ io.on('connection', async (socket) =>{
     })
 
     socket.on('leave', async handshake => {
-        // console.log(handshake.endPeer, "endPeer")
         const endPeer = await client.get(handshake.endPeer.number)
-        console.log(endPeer, 'endPeer')
-        await io.to(endPeer).emit('user:left', handshake.peer)
+        io.to(endPeer).emit('user:left', handshake.peer)
     })
 
     socket.on('disconnect', ()=>{
