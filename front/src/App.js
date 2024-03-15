@@ -8,9 +8,9 @@ const socket = io('https://192.168.0.3:5001', {
 })
 
 function App() {
-  const [id, setId] = useState(null)
   const [name, setName] = useState()
   const [endPeer, setEndPeer] = useState('') 
+  const [number, setNumber] = useState('')
   const onChange = (e)=> setEndPeer(e.target.value)
   const [stream, setStream] = useState(null)
   const [isCalling, setIsCalling] = useState(false)
@@ -31,18 +31,19 @@ function App() {
         const handshake = {
           reciever: endPeer,
           caller: {
-            id,
+            number,
             signal,
             name
           }
         }
         setOfferStatus(true)
-        socket.emit('callPeer', handshake)
+        socket.emit('offer', handshake)
       })
-      socket.on('callAnswered', ({id, name, signal}) =>{
+      socket.on('call:accepted', (caller) =>{
+        console.log(caller)
         setCallStatus(true)
-        setIsCalling({id, name})
-        peer.current.signal(signal)
+        setIsCalling(caller)
+        peer.current.signal(caller.signal)
       })
       peer.current.on('stream', stream =>{
         peerAudio.current.srcObject = stream
@@ -62,7 +63,6 @@ function App() {
         const handshake = {
           caller: isCalling,
           endReciever: {
-            id,
             name,
             signal
           }
@@ -70,7 +70,7 @@ function App() {
         setCallStatus(true)
         console.log(handshake, 'answer call')
         
-        socket.emit('answerCall', handshake)
+        socket.emit('accept', handshake)
       })
       peer.current.signal(isCalling.signal)
       peer.current.on('stream', stream =>{
@@ -86,10 +86,10 @@ function App() {
   }
   const leave =() =>{
     let handshake = {
-      peer: {id, name},
+      peer: {number, name},
       endPeer: isCalling
     }
-    socket.emit('leaveCall', handshake)
+    socket.emit('leave', handshake)
     setIsCalling(null)
     setCallStatus(false)
     console.log(peer.current.destroy)
@@ -103,30 +103,44 @@ function App() {
     .catch(e => console.log(e))
     
     let name = localStorage.getItem('name')
-    if (!name){
+    let number = localStorage.getItem('number')
+    if (!name ){
       name = prompt('write your name')
       localStorage.setItem('name', name)
+      
+    }
+    if (!number){
+      number = prompt('write your number')
+      localStorage.setItem('number', number)
     }
     setName(name)
-    socket.on('/', socketId => setId(socketId))
-    socket.on('recieveCall', caller => {
+    setNumber(number)
+    
+    socket.on('connect',()=>{
+      console.log('connected to server.')
+      socket.emit('get:user', {number, name})
+    })
+    socket.on("connect_error", (err) => {
+      console.log(err)
+    });
+    socket.on('get:offer', caller => {
       console.log(caller)
       setIsCalling(caller)
     })
-    socket.on("connect_error", (err) => {
-      // console.log(`connect_error due to ${err.message}`);
-      console.log(err)
-    });
-    socket.on('userLeft', endPeer =>{
-      setIsCalling(null)
-      setCallStatus(false)
-      peer.current.destroy()
+    socket.on('user:left',async endPeer =>{
+      console.log(endPeer, 'left')
+
+        setCallStatus(false)
+        setIsCalling(null)
+        setOfferStatus(null)
+        peer.current.destroy()
 
     })
     socket.on('decline', ()=>{
       setOfferStatus(false)
     })
-    socket.on('endCall', ()=>{
+    socket.on('call:end', ()=>{
+      setOfferStatus(false)
       setIsCalling(null)
     })
   }, [])
@@ -137,13 +151,13 @@ function App() {
       
       <div>
         <h2>{name}</h2>
-        <h3>{id}</h3>
+        <h3>{number}</h3>
       </div>
       <p>----------------------</p>
       {isCalling ? 
       (
         <div>
-          <h3>{isCalling.name}: {isCalling.id}</h3>
+          <h3>{isCalling.name}: {isCalling.number}</h3>
          
           {!callStatus ?
           (<div style={{display: 'flex', flexDirection: 'row', justifyContent: 'center', gap: '5px'}}>
@@ -164,7 +178,7 @@ function App() {
       ):(
         <div style={{display: 'flex', flexDirection: 'column', marginTop: '25px'}}>
         <input style={{padding: 10, borderRadius: '5px'}} onChange={onChange} type='text' placeholder='calling to' value={endPeer}></input>
-        <button onClick={call} style={{backgroundColor: 'lightgreen', marginTop: '10px', width: '100px', alignSelf: 'center', }}>call</button>
+        <button disabled={offerStatus} onClick={call} style={{backgroundColor: 'lightgreen', marginTop: '10px', width: '100px', alignSelf: 'center', }}>call</button>
         
       </div>)}
       
